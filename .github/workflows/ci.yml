@@ -1,0 +1,35 @@
+name: SUB Language CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Build Environment
+      run: |
+        echo "Setting up build environment"
+    
+    - name: Build Compiler
+      run: make
+    
+    - name: Test Example
+      run: |
+        ./sub example.sb web
+        echo "Example compiled successfully!"
+    
+    - name: Archive Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: sub-compiler-${{ matrix.os }}
+        path: sub

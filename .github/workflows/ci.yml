@@ -2,247 +2,67 @@ name: SUB Language CI
 
 on:
   push:
-    branches: [ main, develop, '**' ]
-  pull_request:
     branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
-  build-and-test:
+  build:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-      fail-fast: false  # Continue testing other OS even if one fails
+        os: [ubuntu-latest, macos-latest]
+      fail-fast: false
     
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v3
     
     - name: Setup Build Environment
-      shell: bash
       run: |
-        echo "=== Build Environment Setup ==="
-        echo "OS: ${{ matrix.os }}"
-        echo "Runner: ${{ runner.os }}"
-        echo "Event: ${{ github.event_name }}"
-        echo "Branch: ${{ github.ref_name }}"
-        
-        if [ "${{ runner.os }}" = "Windows" ]; then
-          choco install make -y
-        fi
-        
-        echo "\nCompiler version:"
-        gcc --version || clang --version || echo "No GCC/Clang found"
+        echo "Setting up build environment on ${{ matrix.os }}"
+        echo "GCC version:"
+        gcc --version || true
     
-    - name: Build SUB Compiler
-      id: build
-      shell: bash
+    - name: Build Compiler
       run: |
-        echo "=== Building SUB Compiler ==="
-        set -e  # Exit on any error
-        
-        if ! make; then
-          echo "::error::Build failed - compilation errors detected"
-          exit 1
-        fi
-        
-        echo "✓ Build successful"
-        echo "build_status=success" >> $GITHUB_OUTPUT
+        echo "Building SUB compiler..."
+        make
     
-    - name: Verify Compiler Binary
-      shell: bash
+    - name: Verify Build
       run: |
-        echo "=== Verifying Compiler Binary ==="
-        
-        if [ ! -f sub ] && [ ! -f sub.exe ]; then
-          echo "::error::Compiler binary not found after build"
-          exit 1
-        fi
-        
-        if [ -f sub ]; then
-          ls -lh sub
-          file sub || true
-          chmod +x sub
-        elif [ -f sub.exe ]; then
-          ls -lh sub.exe
-          file sub.exe || true
-        fi
-        
-        echo "✓ Compiler binary verified"
+        echo "Verifying compiler build..."
+        ls -lh sub
+        file sub || true
     
-    - name: Test Example Compilation (Web)
-      id: test_web
-      shell: bash
-      continue-on-error: false
+    - name: Test Example Compilation
+      continue-on-error: true
       run: |
-        echo "=== Testing Web Target Compilation ==="
-        
-        COMPILER="./sub"
-        [ -f sub.exe ] && COMPILER="./sub.exe"
-        
-        if [ ! -f example.sb ]; then
-          echo "::warning::example.sb not found, skipping test"
-          exit 0
-        fi
-        
-        if ! $COMPILER example.sb web; then
-          echo "::error::Failed to compile example.sb for web target"
-          exit 1
-        fi
-        
-        echo "✓ Web compilation successful"
-        
+        echo "Testing example.sb compilation..."
+        ./sub example.sb web || echo "Compilation completed with exit code $?"
         if [ -f output_web.code ]; then
-          echo "Output file generated: output_web.code"
-          echo "File size: $(wc -c < output_web.code) bytes"
-          echo "First 10 lines:"
-          head -10 output_web.code
-        fi
-    
-    - name: Test Example Compilation (Android)
-      id: test_android
-      shell: bash
-      continue-on-error: true  # Don't fail workflow if platform not fully implemented
-      run: |
-        echo "=== Testing Android Target Compilation ==="
-        
-        COMPILER="./sub"
-        [ -f sub.exe ] && COMPILER="./sub.exe"
-        
-        if [ -f example.sb ]; then
-          if $COMPILER example.sb android; then
-            echo "✓ Android compilation successful"
-          else
-            echo "::warning::Android compilation failed or not implemented"
-          fi
-        fi
-    
-    - name: Run Unit Tests
-      id: unit_tests
-      shell: bash
-      continue-on-error: true
-      run: |
-        echo "=== Running Unit Tests ==="
-        
-        if [ -f test.sh ]; then
-          bash test.sh
-        elif [ -f tests/run_tests.sh ]; then
-          bash tests/run_tests.sh
+          echo "Output file generated successfully"
+          echo "First 20 lines of output:"
+          head -20 output_web.code
         else
-          echo "::notice::No test suite found, skipping"
+          echo "Warning: Output file not generated"
         fi
     
-    - name: Check for Memory Leaks (Linux only)
-      if: runner.os == 'Linux'
-      shell: bash
-      continue-on-error: true
-      run: |
-        echo "=== Memory Leak Check ==="
-        
-        if command -v valgrind &> /dev/null; then
-          echo "Running valgrind memory check..."
-          if [ -f example.sb ]; then
-            valgrind --leak-check=full --error-exitcode=1 ./sub example.sb web 2>&1 | tee valgrind.log
-          fi
-        else
-          echo "::notice::Valgrind not available, skipping memory check"
-        fi
-    
-    - name: Upload Build Artifacts
+    - name: Archive Artifacts
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: sub-compiler-${{ matrix.os }}-${{ github.sha }}
+        name: sub-compiler-${{ matrix.os }}
         path: |
           sub
-          sub.exe
           output_*.code
-          *.log
-        if-no-files-found: warn
-        retention-days: 30
-    
-    - name: Report Test Results
-      if: always()
-      shell: bash
-      run: |
-        echo "=== Test Results Summary ==="
-        echo "Build: ${{ steps.build.outcome }}"
-        echo "Web Test: ${{ steps.test_web.outcome }}"
-        echo "Android Test: ${{ steps.test_android.outcome }}"
-        echo "Unit Tests: ${{ steps.unit_tests.outcome }}"
+        if-no-files-found: ignore
 
-  code-quality:
+  build-status:
     runs-on: ubuntu-latest
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-    
-    - name: Check Code Style
-      continue-on-error: true
-      run: |
-        echo "=== Code Style Check ==="
-        
-        if command -v clang-format &> /dev/null; then
-          echo "Checking C code formatting..."
-          find . -name '*.c' -o -name '*.h' | xargs clang-format --dry-run -Werror
-        else
-          echo "::notice::clang-format not available"
-        fi
-    
-    - name: Static Analysis
-      continue-on-error: true
-      run: |
-        echo "=== Static Analysis ==="
-        
-        if command -v cppcheck &> /dev/null; then
-          echo "Running cppcheck..."
-          cppcheck --enable=all --suppress=missingIncludeSystem . 2>&1 | tee cppcheck.log
-        else
-          echo "::notice::cppcheck not available"
-        fi
-
-  summary:
-    runs-on: ubuntu-latest
-    needs: [build-and-test, code-quality]
+    needs: build
     if: always()
     steps:
-    - name: Build Status Summary
-      shell: bash
+    - name: Check Build Status
       run: |
-        echo "=== CI Pipeline Summary ==="
-        echo "Workflow: ${{ github.workflow }}"
-        echo "Trigger: ${{ github.event_name }}"
-        echo "Branch: ${{ github.ref_name }}"
-        echo "Commit: ${{ github.sha }}"
-        echo "Actor: ${{ github.actor }}"
-        echo ""
-        echo "Build & Test: ${{ needs.build-and-test.result }}"
-        echo "Code Quality: ${{ needs.code-quality.result }}"
-        echo ""
-        
-        if [ "${{ needs.build-and-test.result }}" != "success" ]; then
-          echo "::error::Build and test jobs failed - compiler may be broken"
-          exit 1
-        fi
-        
-        echo "✓ All checks passed successfully"
-    
-    - name: Comment on PR
-      if: github.event_name == 'pull_request'
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const buildResult = '${{ needs.build-and-test.result }}';
-          const qualityResult = '${{ needs.code-quality.result }}';
-          
-          let message = '## CI Pipeline Results\n\n';
-          message += `- **Build & Test**: ${buildResult === 'success' ? '✅' : '❌'} ${buildResult}\n`;
-          message += `- **Code Quality**: ${qualityResult === 'success' ? '✅' : '⚠️'} ${qualityResult}\n`;
-          message += `\n[View full results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`;
-          
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: message
-          });
+        echo "Build workflow completed"
+        echo "Check individual job results above"

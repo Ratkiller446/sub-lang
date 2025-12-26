@@ -1,7 +1,6 @@
 # Build artifacts
 *.out
 *.exe
-sub
 output_*.code
 build/
 

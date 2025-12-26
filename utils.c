@@ -3,6 +3,7 @@
    File: utils.c
    ======================================== */
 
+#define _GNU_SOURCE
 #include "sub_compiler.h"
 
 // String utilities

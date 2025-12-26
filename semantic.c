@@ -3,33 +3,34 @@
    File: semantic.c
    ======================================== */
 
+#define _GNU_SOURCE
 #include "sub_compiler.h"
 
-// Symbol table entry
-typedef struct SymbolEntry {
+// Symbol table entry (local)
+typedef struct LocalSymbolEntry {
     char *name;
     char *type;
     int scope_level;
-    struct SymbolEntry *next;
-} SymbolEntry;
+    struct LocalSymbolEntry *next;
+} LocalSymbolEntry;
 
-// Symbol table
+// Symbol table (local)
 typedef struct {
-    SymbolEntry *head;
+    LocalSymbolEntry *head;
     int current_scope;
-} SymbolTable;
+} LocalSymbolTable;
 
 // Create symbol table
-static SymbolTable* create_symbol_table() {
-    SymbolTable *table = malloc(sizeof(SymbolTable));
+static LocalSymbolTable* create_symbol_table() {
+    LocalSymbolTable *table = malloc(sizeof(LocalSymbolTable));
     table->head = NULL;
     table->current_scope = 0;
     return table;
 }
 
 // Add symbol to table
-static void add_symbol(SymbolTable *table, const char *name, const char *type) {
-    SymbolEntry *entry = malloc(sizeof(SymbolEntry));
+static void add_symbol(LocalSymbolTable *table, const char *name, const char *type) {
+    LocalSymbolEntry *entry = malloc(sizeof(LocalSymbolEntry));
     entry->name = strdup(name);
     entry->type = strdup(type);
     entry->scope_level = table->current_scope;
@@ -38,8 +39,8 @@ static void add_symbol(SymbolTable *table, const char *name, const char *type) {
 }
 
 // Lookup symbol in table
-static SymbolEntry* lookup_symbol(SymbolTable *table, const char *name) {
-    SymbolEntry *current = table->head;
+static LocalSymbolEntry* lookup_symbol(LocalSymbolTable *table, const char *name) {
+    LocalSymbolEntry *current = table->head;
     while (current) {
         if (strcmp(current->name, name) == 0) {
             return current;
@@ -50,10 +51,10 @@ static SymbolEntry* lookup_symbol(SymbolTable *table, const char *name) {
 }
 
 // Free symbol table
-static void free_symbol_table(SymbolTable *table) {
-    SymbolEntry *current = table->head;
+static void free_symbol_table(LocalSymbolTable *table) {
+    LocalSymbolEntry *current = table->head;
     while (current) {
-        SymbolEntry *next = current->next;
+        LocalSymbolEntry *next = current->next;
         free(current->name);
         free(current->type);
         free(current);
@@ -63,7 +64,7 @@ static void free_symbol_table(SymbolTable *table) {
 }
 
 // Analyze AST node
-static int analyze_node(ASTNode *node, SymbolTable *table) {
+static int analyze_node(ASTNode *node, LocalSymbolTable *table) {
     if (!node) return 1;
     
     switch (node->type) {
@@ -117,7 +118,7 @@ int semantic_analyze(ASTNode *ast) {
         return 0;
     }
     
-    SymbolTable *table = create_symbol_table();
+    LocalSymbolTable *table = create_symbol_table();
     int result = analyze_node(ast, table);
     free_symbol_table(table);
     

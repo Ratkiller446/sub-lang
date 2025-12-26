@@ -3,6 +3,7 @@
    File: parser.c
    ======================================== */
 
+#define _GNU_SOURCE
 #include "sub_compiler.h"
 
 // Parser state

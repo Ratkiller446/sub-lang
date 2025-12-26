@@ -4,6 +4,7 @@
    File: codegen.c
    ======================================== */
 
+#define _GNU_SOURCE
 #include "sub_compiler.h"
 
 // Platform-specific code generation functions

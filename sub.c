@@ -3,6 +3,7 @@
    File: sub.c
    ======================================== */
 
+#define _GNU_SOURCE
 #include "sub_compiler.h"
 
 // Utility: Read file contents

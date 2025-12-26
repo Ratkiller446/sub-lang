@@ -4,6 +4,12 @@
 *.exe
 sub
 output_*.code
+build/
+
+# Rust
+target/
+Cargo.lock
+**/*.rs.bk
 
 # Editor files
 .vscode/

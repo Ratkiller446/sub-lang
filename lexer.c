@@ -3,6 +3,7 @@
    File: lexer.c
    ======================================== */
 
+#define _GNU_SOURCE
 #include "sub_compiler.h"
 
 // Helper function to check if character is valid identifier start

@@ -8,6 +8,7 @@
 #ifndef SUB_COMPILER_H
 #define SUB_COMPILER_H
 
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -256,7 +257,7 @@ ASTNode* parser_parse_expression(CompilerContext *ctx);
 ASTNode* parser_parse_statement(CompilerContext *ctx);
 
 // Semantic Analysis
-int semantic_analyze(ASTNode *ast, SymbolTable *symbols);
+int semantic_analyze(ASTNode *ast);
 bool semantic_type_check(ASTNode *node);
 DataType semantic_infer_type(ASTNode *node);
 
@@ -269,7 +270,7 @@ void symbol_table_enter_scope(SymbolTable *table);
 void symbol_table_exit_scope(SymbolTable *table);
 
 // Code Generation
-char* codegen_generate(ASTNode *ast, Platform platform, CompilationOptions *options);
+char* codegen_generate(ASTNode *ast, Platform platform);
 char* codegen_generate_cpp(ASTNode *ast, Platform platform);
 char* codegen_generate_c(ASTNode *ast, Platform platform);
 char* codegen_embed_cpp(const char *cpp_code);

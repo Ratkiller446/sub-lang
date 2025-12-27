@@ -51,16 +51,16 @@ static LanguageInfo language_info[] = {
     {"wasm",       ".wasm",  "(browser)",  "(load in WebAssembly)"},
 };
 
-/* External codegen functions (from codegen_multilang.c) */
-extern char* codegen_python(ASTNode *ast);
-extern char* codegen_java(ASTNode *ast);
-extern char* codegen_swift(ASTNode *ast);
-extern char* codegen_kotlin(ASTNode *ast);
-extern char* codegen_cpp(ASTNode *ast);
-extern char* codegen_rust(ASTNode *ast);
-extern char* codegen_javascript(ASTNode *ast);
-extern char* codegen_css(ASTNode *ast);
-extern char* codegen_assembly(ASTNode *ast);
+/* External codegen functions (from codegen_multilang.c) - NOW WITH SOURCE PARAMETER */
+extern char* codegen_python(ASTNode *ast, const char *source);
+extern char* codegen_java(ASTNode *ast, const char *source);
+extern char* codegen_swift(ASTNode *ast, const char *source);
+extern char* codegen_kotlin(ASTNode *ast, const char *source);
+extern char* codegen_cpp(ASTNode *ast, const char *source);
+extern char* codegen_rust(ASTNode *ast, const char *source);
+extern char* codegen_javascript(ASTNode *ast, const char *source);
+extern char* codegen_css(ASTNode *ast, const char *source);
+extern char* codegen_assembly(ASTNode *ast, const char *source);
 
 /* From codegen.c */
 extern char* codegen_generate_c(ASTNode *ast, Platform platform);
@@ -120,32 +120,32 @@ TargetLanguage parse_language(const char *lang_str) {
     return LANG_C; // Default
 }
 
-/* Generate code for target language */
-char* generate_code(ASTNode *ast, TargetLanguage lang) {
+/* Generate code for target language - NOW PASSES SOURCE */
+char* generate_code(ASTNode *ast, TargetLanguage lang, const char *source) {
     switch (lang) {
         case LANG_C:
             return codegen_generate_c(ast, PLATFORM_LINUX);
         case LANG_CPP:
-            return codegen_cpp(ast);
+            return codegen_cpp(ast, source);
         case LANG_PYTHON:
-            return codegen_python(ast);
+            return codegen_python(ast, source);
         case LANG_JAVA:
-            return codegen_java(ast);
+            return codegen_java(ast, source);
         case LANG_SWIFT:
-            return codegen_swift(ast);
+            return codegen_swift(ast, source);
         case LANG_KOTLIN:
-            return codegen_kotlin(ast);
+            return codegen_kotlin(ast, source);
         case LANG_RUST:
-            return codegen_rust(ast);
+            return codegen_rust(ast, source);
         case LANG_JAVASCRIPT:
-            return codegen_javascript(ast);
+            return codegen_javascript(ast, source);
         case LANG_CSS:
-            return codegen_css(ast);
+            return codegen_css(ast, source);
         case LANG_ASSEMBLY:
-            return codegen_assembly(ast);
+            return codegen_assembly(ast, source);
         case LANG_TYPESCRIPT:
             // TypeScript is superset of JS for now
-            return codegen_javascript(ast);
+            return codegen_javascript(ast, source);
         case LANG_GO:
             // TODO: Implement Go codegen
             fprintf(stderr, "Go codegen not yet implemented\n");
@@ -235,9 +235,9 @@ int main(int argc, char *argv[]) {
     }
     printf("      ✓ Passed\n");
     
-    // Phase 5: Code Generation
+    // Phase 5: Code Generation - NOW PASSES SOURCE FOR EMBEDDED CODE
     printf("[5/5] ⚙️  Code generation (%s)...\n", info.name);
-    char *output_code = generate_code(ast, target_lang);
+    char *output_code = generate_code(ast, target_lang, source);
     
     if (!output_code) {
         fprintf(stderr, "      ✗ Code generation failed\n");

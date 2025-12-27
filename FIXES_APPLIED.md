@@ -6,13 +6,15 @@ Your SUB-Lang is no longer just a code generator - it's now a **real, working pr
 
 ### Problem Before
 
-The `codegen.c` file was generating dummy "Hello World" templates regardless of what you wrote in your `.sb` files. The AST (Abstract Syntax Tree) built by the parser was completely ignored.
+1. The `codegen.c` file was generating dummy "Hello World" templates regardless of what you wrote in your `.sb` files. The AST (Abstract Syntax Tree) built by the parser was completely ignored.
+2. Output files were saved as `.code` instead of proper extensions like `.c`, `.java`, `.swift`
 
 ### Solution Applied
 
 ✅ **Complete Rewrite of codegen.c** - Now actually processes the AST and generates real code
 ✅ **Enhanced Parser** - Added `parser_enhanced.c` with full support for SUB syntax
 ✅ **Real Code Generation** - Your `.sb` code now compiles to working C/C++ code
+✅ **Proper File Extensions** - Output now uses `.c`, `.java`, `.swift`, `.html` based on platform
 ✅ **Test File** - Added `test_real.sb` to demonstrate real compilation
 
 ---
@@ -82,7 +84,15 @@ Supported constructs:
 - ✅ Function calls
 - ✅ Parenthesized expressions
 
-### 3. String Builder Utility
+### 3. Proper Output Files (`sub.c`)
+
+Now generates files with correct extensions:
+- **Linux/Windows/macOS**: `output_linux.c` (C source)
+- **Android**: `output_android.java` (Java source)
+- **iOS**: `output_ios.swift` (Swift source)
+- **Web**: `output_web.html` (HTML with JavaScript)
+
+### 4. String Builder Utility
 
 Implemented efficient string building for code generation:
 - Dynamic buffer resizing
@@ -107,14 +117,37 @@ gcc -o sub sub.c lexer.c parser_enhanced.c codegen.c semantic.c utils.c -I.
 ### Compile a SUB Program
 
 ```bash
-# Compile SUB code to C
+# Compile for Linux (default) - generates .c file
 ./sub test_real.sb
 
-# This generates output.c - compile it with GCC
-gcc output.c -o program
+# Or specify platform explicitly
+./sub test_real.sb linux
+
+# This generates output_linux.c - compile it with GCC
+gcc output_linux.c -o program
 
 # Run your program!
 ./program
+```
+
+### Cross-Platform Compilation
+
+```bash
+# For Android (generates .java file)
+./sub program.sb android
+javac output_android.java
+
+# For iOS (generates .swift file)
+./sub program.sb ios
+swiftc output_ios.swift -o program
+
+# For Web (generates .html file)
+./sub program.sb web
+# Open output_web.html in browser
+
+# For Windows (generates .c file)
+./sub program.sb windows
+gcc output_windows.c -o program.exe
 ```
 
 ### Test Example
@@ -123,11 +156,24 @@ Try the included `test_real.sb`:
 
 ```bash
 ./sub test_real.sb
-gcc output.c -o test
+gcc output_linux.c -o test
 ./test
 ```
 
 You should see actual output from your SUB program!
+
+---
+
+## File Extensions by Platform
+
+| Platform | Output File | Extension | Compiler |
+|----------|-------------|-----------|----------|
+| Linux | `output_linux.c` | `.c` | gcc |
+| macOS | `output_macos.c` | `.c` | gcc/clang |
+| Windows | `output_windows.c` | `.c` | gcc/cl |
+| Android | `output_android.java` | `.java` | javac |
+| iOS | `output_ios.swift` | `.swift` | swiftc |
+| Web | `output_web.html` | `.html` | (browser) |
 
 ---
 
@@ -178,9 +224,9 @@ SUB Source (.sb)
       ↓
   Code Generator (codegen.c)
       ↓
- Target Code (C/C++/Java/Swift/JS)
+Target Code (.c/.java/.swift/.html)
       ↓
-  Native Compiler (gcc/clang/javac)
+  Native Compiler (gcc/javac/swiftc)
       ↓
  Executable Program
 ```
@@ -191,6 +237,7 @@ SUB Source (.sb)
 
 ### Modified:
 - **codegen.c** - Completely rewritten to process AST
+- **sub.c** - Fixed to use proper file extensions
 
 ### Created:
 - **parser_enhanced.c** - New robust parser
@@ -210,7 +257,7 @@ SUB Source (.sb)
 1. **Test the new compiler**:
    ```bash
    ./sub test_real.sb
-   gcc output.c -o test && ./test
+   gcc output_linux.c -o test && ./test
    ```
 
 2. **Write more SUB programs**: Try different features!

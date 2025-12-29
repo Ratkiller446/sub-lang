@@ -159,18 +159,18 @@ static void ir_generate_from_ast_node(IRFunction *func, ASTNode *node) {
     if (!node) return;
     
     switch (node->type) {
-        case NODE_PROGRAM:
+        case AST_PROGRAM:
             // Process all children
             for (int i = 0; i < node->child_count; i++) {
                 ir_generate_from_ast_node(func, node->children[i]);
             }
             break;
             
-        case NODE_VAR_DECL: {
+        case AST_VAR_DECL: {
             // Variable declaration: allocate space
             IRInstruction *alloc = ir_instruction_create(IR_ALLOC);
             alloc->dest = ir_value_create_reg(func->local_count++, IR_TYPE_INT);
-            alloc->dest->name = node->name ? strdup(node->name) : NULL;
+            alloc->dest->name = node->value ? strdup(node->value) : NULL;
             ir_function_add_instruction(func, alloc);
             
             // If there's an initializer, store it
@@ -184,8 +184,8 @@ static void ir_generate_from_ast_node(IRFunction *func, ASTNode *node) {
             break;
         }
             
-        case NODE_FUNCTION_CALL:
-            if (strcmp(node->name, "print") == 0) {
+        case AST_CALL_EXPR:
+            if (node->value && strcmp(node->value, "print") == 0) {
                 // Generate code for arguments
                 for (int i = 0; i < node->child_count; i++) {
                     ir_generate_from_ast_node(func, node->children[i]);
@@ -196,18 +196,19 @@ static void ir_generate_from_ast_node(IRFunction *func, ASTNode *node) {
             }
             break;
             
-        case NODE_BINARY_OP: {
+        case AST_BINARY_EXPR: {
             // Generate left and right operands
-            ir_generate_from_ast_node(func, node->children[0]);
-            ir_generate_from_ast_node(func, node->children[1]);
+            if (node->left) ir_generate_from_ast_node(func, node->left);
+            if (node->right) ir_generate_from_ast_node(func, node->right);
             
             // Determine operation
-            IROpcode op;
-            if (strcmp(node->name, "+") == 0) op = IR_ADD;
-            else if (strcmp(node->name, "-") == 0) op = IR_SUB;
-            else if (strcmp(node->name, "*") == 0) op = IR_MUL;
-            else if (strcmp(node->name, "/") == 0) op = IR_DIV;
-            else op = IR_ADD; // Default
+            IROpcode op = IR_ADD;
+            if (node->value) {
+                if (strcmp(node->value, "+") == 0) op = IR_ADD;
+                else if (strcmp(node->value, "-") == 0) op = IR_SUB;
+                else if (strcmp(node->value, "*") == 0) op = IR_MUL;
+                else if (strcmp(node->value, "/") == 0) op = IR_DIV;
+            }
             
             IRInstruction *bin_op = ir_instruction_create(op);
             bin_op->dest = ir_value_create_reg(func->reg_count++, IR_TYPE_INT);
@@ -215,11 +216,15 @@ static void ir_generate_from_ast_node(IRFunction *func, ASTNode *node) {
             break;
         }
             
-        case NODE_NUMBER: {
+        case AST_LITERAL: {
             // Load constant
             IRInstruction *load_const = ir_instruction_create(IR_CONST_INT);
             load_const->dest = ir_value_create_reg(func->reg_count++, IR_TYPE_INT);
-            load_const->src1 = ir_value_create_int(atoi(node->name));
+            if (node->value) {
+                load_const->src1 = ir_value_create_int(atoi(node->value));
+            } else {
+                load_const->src1 = ir_value_create_int(0);
+            }
             ir_function_add_instruction(func, load_const);
             break;
         }

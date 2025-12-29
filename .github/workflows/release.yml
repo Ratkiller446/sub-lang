@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release (e.g., v1.0.3)'
+        description: 'Version to release (e.g., v1.0.4)'
         required: true
         type: string
 
@@ -16,7 +16,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         include:
           - os: ubuntu-latest
             artifact_name: sublang-linux
@@ -24,12 +24,16 @@ jobs:
           - os: macos-latest
             artifact_name: sublang-macos
             asset_name: sublang-macos-x64
+          - os: windows-latest
+            artifact_name: sublang-windows.exe
+            asset_name: sublang-windows-x64.exe
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup build environment
+      - name: Setup build environment (Linux/macOS)
+        if: runner.os != 'Windows'
         run: |
           if [ "$RUNNER_OS" == "Linux" ]; then
             sudo apt-get update
@@ -38,17 +42,32 @@ jobs:
             brew install gcc make
           fi
 
-      - name: Build project
+      - name: Setup build environment (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Build project (Linux/macOS)
+        if: runner.os != 'Windows'
         run: |
           make clean
           make
           chmod +x sublang
           mv sublang ${{ matrix.artifact_name }}
 
+      - name: Build project (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          cl /I. sub_multilang.c parser.c lexer.c semantic.c codegen.c codegen_multilang.c /Fe:${{ matrix.artifact_name }}
+
       - name: Test build
         run: |
-          ./${{ matrix.artifact_name }} --version || echo "Version flag not implemented"
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            ./${{ matrix.artifact_name }} --version || echo "Version flag not implemented"
+          else
+            ./${{ matrix.artifact_name }} --version || echo "Version flag not implemented"
+          fi
           echo "Build successful!"
+        shell: bash
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -87,90 +106,112 @@ jobs:
         id: release_notes
         run: |
           cat > release_notes.md << 'EOF'
-          ## 🎉 SUB Language ${{ steps.version.outputs.VERSION }}
+          ## 🎉 SUB Language ${{ steps.version.outputs.VERSION }} - Windows Support Release
           
-          ### ✨ What's New
+          ### 🪟 What's New: Full Windows/MSVC Compatibility!
           
-          #### Ruby Language Support
-          - **New Target Language**: SUB now compiles to Ruby! 🔴
-          - Natural syntax alignment: SUB's `#end` maps perfectly to Ruby's `end`
-          - Full feature support: variables, functions, loops, conditionals
-          - Ruby-idiomatic code generation:
-            - 2-space indentation (Ruby convention)
-            - `elsif` instead of `elif`
-            - `puts` for output
-            - Proper `end` keyword handling
+          SUB Language compiler now builds successfully on Windows with Microsoft Visual C++ (MSVC)! This release includes comprehensive cross-platform compatibility fixes.
           
-          #### Usage
-          ```bash
-          ./sublang program.sb ruby
-          ruby output.rb
+          #### ✨ Key Features
+          
+          **Windows Build Support**
+          - ✅ Full MSVC/Visual Studio compatibility
+          - ✅ Automatic function mapping for Windows API
+          - ✅ Cross-platform compilation without code changes
+          - ✅ Works on Windows, Linux, and macOS
+          
+          #### 🔧 Technical Changes
+          
+          **New Files**
+          - `windows_compat.h` - Central compatibility header for Windows/MSVC
+            - Maps `strdup()` → `_strdup()` 
+            - Maps `strcasecmp()` → `_stricmp()`
+            - Maps `strncasecmp()` → `_strnicmp()`
+            - Conditionally handles `<strings.h>` (not available on Windows)
+          
+          **Updated Files** (8 files with compatibility fixes)
+          - `sub_multilang.c` - Multi-language compiler driver
+          - `parser.c` - AST parser
+          - `parser_enhanced.c` - Enhanced parser with full language support
+          - `semantic.c` - Semantic analyzer
+          - `lexer.c` - Lexical analyzer
+          - `codegen.c` - Code generator
+          - `codegen_multilang.c` - Multi-language code generator
+          - `compiler/backend/codegen.c` - Backend code generator
+          
+          ### 🚀 How to Build
+          
+          #### Windows (MSVC)
+          ```batch
+          REM Using Visual Studio Developer Command Prompt
+          cl /I. sub_multilang.c parser.c lexer.c semantic.c codegen.c codegen_multilang.c /Fe:subc.exe
+          subc.exe program.sb python
           ```
           
-          #### Syntax Examples
+          #### Linux/macOS
+          ```bash
+          gcc -o subc sub_multilang.c parser.c lexer.c semantic.c codegen.c codegen_multilang.c
+          ./subc program.sb java
+          ```
           
-          | SUB Syntax | Ruby Output |
-          |------------|-------------|
-          | `#var x = 5` | `x = 5` |
-          | `#function foo()` | `def foo` |
-          | `#if condition` | `if condition` |
-          | `#for i in range(10)` | `(0...10).each do \|i\|` |
-          | `#print(x)` | `puts x` |
-          | `#end` | `end` |
+          ### 🎯 Target Languages Supported
           
-          ### 📦 Supported Languages
+          Compile your SUB code to any of these languages:
+          - C, C++
+          - Python
+          - Java
+          - JavaScript, TypeScript
+          - Swift, Kotlin
+          - Rust
+          - Ruby
+          - Go (coming soon)
+          - Assembly (x86-64)
+          - CSS
+          - LLVM IR (coming soon)
+          - WebAssembly (coming soon)
           
-          SUB now compiles to **9 languages**:
-          - Python 🐍
-          - JavaScript 💛
-          - Java ☕
-          - C 🔧
-          - C++ ⚡
-          - Swift 🍎
-          - Kotlin 🎯
-          - Go 🔵
-          - **Ruby 🔴** (NEW!)
+          ### 📦 Cross-Platform Targets
           
-          ### 🐛 Bug Fixes
-          - Fixed pre-existing bug in Swift codegen (raw newline in string literal)
+          - 🖥️ **Desktop**: Windows, macOS, Linux
+          - 📱 **Mobile**: Android, iOS
+          - 🌐 **Web**: Browser-based applications
           
-          ### 📚 Documentation
-          - Updated README.md with Ruby examples
-          - Enhanced MULTILANG_GUIDE.md
-          - Expanded LANGUAGE_SPEC.md
-          - Added comprehensive contribution guide (table.md)
+          ### 🔍 What's Fixed
           
-          ### 🧪 Testing
-          - 8 new test files for Ruby edge cases
-          - All regression tests passing
-          - Cross-platform compatibility verified
-          
-          ### 🙏 Contributors
-          
-          Special thanks to @ul0gic for the excellent Ruby implementation!
+          - **Issue**: `strdup()` not recognized by MSVC → Fixed with automatic mapping
+          - **Issue**: `strcasecmp()` undefined on Windows → Fixed with `_stricmp()` mapping
+          - **Issue**: `<strings.h>` doesn't exist on Windows → Fixed with conditional includes
+          - **Issue**: 20+ files affected by Windows incompatibility → All files updated
           
           ### 📥 Installation
           
           Download the appropriate binary for your platform:
+          - **Windows (x64)**: `sublang-windows-x64.exe` ✨ NEW!
           - **Linux (x64)**: `sublang-linux-x64`
           - **macOS (x64)**: `sublang-macos-x64`
           
-          > **Note**: Windows support is not available in this release. SUB Language currently supports Linux and macOS only.
+          **Windows Usage:**
+          ```batch
+          sublang-windows-x64.exe program.sb python
+          ```
           
-          Make it executable:
+          **Linux/macOS Usage:**
           ```bash
           chmod +x sublang-*-x64
           ./sublang-*-x64 program.sb ruby
           ```
           
-          ### 🔗 Links
-          - [Documentation](https://github.com/subhobhai943/sub-lang/blob/main/README.md)
-          - [Contribution Guide](https://github.com/subhobhai943/sub-lang/blob/main/table.md)
-          - [Language Specification](https://github.com/subhobhai943/sub-lang/blob/main/LANGUAGE_SPEC.md)
+          ### 📚 Documentation
+          
+          For complete documentation, visit: https://github.com/subhobhai943/sub-lang
+          
+          ### 🙏 Acknowledgments
+          
+          Thank you to all contributors and users who reported Windows build issues!
           
           ---
           
-          **Full Changelog**: https://github.com/subhobhai943/sub-lang/compare/v1.0.2...v1.0.3
+          **Full Changelog**: https://github.com/subhobhai943/sub-lang/commits/${{ steps.version.outputs.VERSION }}
           EOF
           echo "Generated release notes"
 
@@ -185,11 +226,12 @@ jobs:
           files: |
             artifacts/sublang-linux-x64/*
             artifacts/sublang-macos-x64/*
+            artifacts/sublang-windows-x64.exe/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Release Summary
         run: |
           echo "✅ Release ${{ steps.version.outputs.VERSION }} created successfully!"
-          echo "📦 Artifacts uploaded for Linux and macOS"
+          echo "📦 Artifacts uploaded for Windows, Linux, and macOS"
           echo "🔗 View release: https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.VERSION }}"

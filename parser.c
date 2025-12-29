@@ -5,6 +5,7 @@
 
 #define _GNU_SOURCE
 #include "sub_compiler.h"
+#include "windows_compat.h"
 
 // Parser state
 typedef struct {

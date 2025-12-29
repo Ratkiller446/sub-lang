@@ -25,7 +25,7 @@
 #endif
 
 /* Read file utility */
-static char* read_file(const char *filename) {
+static char* read_file_native(const char *filename) {
     FILE *file = fopen(filename, "r");
     if (!file) {
         fprintf(stderr, "Error: Cannot open file %s\n", filename);
@@ -65,7 +65,7 @@ int compile_to_native(const char *input_file, const char *output_file) {
     
     // Phase 1: Read source
     printf("[1/7] 📖 Reading source file...\n");
-    char *source = read_file(input_file);
+    char *source = read_file_native(input_file);
     if (!source) return 1;
     printf("      ✓ Read %zu bytes\n", strlen(source));
     

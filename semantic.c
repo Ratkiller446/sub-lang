@@ -5,6 +5,7 @@
 
 #define _GNU_SOURCE
 #include "sub_compiler.h"
+#include "windows_compat.h"
 
 // Symbol table entry (local)
 typedef struct LocalSymbolEntry {

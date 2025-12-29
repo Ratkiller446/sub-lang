@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release (e.g., v1.0.4)'
+        description: 'Version to release (e.g., v1.0.5)'
         required: true
         type: string
 
@@ -20,12 +20,15 @@ jobs:
         include:
           - os: ubuntu-latest
             artifact_name: sublang-linux
+            native_name: subc-native-linux
             asset_name: sublang-linux-x64
           - os: macos-latest
             artifact_name: sublang-macos
+            native_name: subc-native-macos
             asset_name: sublang-macos-x64
           - os: windows-latest
             artifact_name: sublang-windows.exe
+            native_name: subc-native-windows.exe
             asset_name: sublang-windows-x64.exe
 
     steps:
@@ -46,7 +49,7 @@ jobs:
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Build project (Linux/macOS)
+      - name: Build transpiler (Linux/macOS)
         if: runner.os != 'Windows'
         run: |
           make clean
@@ -54,26 +57,34 @@ jobs:
           chmod +x sublang
           mv sublang ${{ matrix.artifact_name }}
 
-      - name: Build project (Windows)
+      - name: Build transpiler (Windows)
         if: runner.os == 'Windows'
         run: |
           cl /I. sub_multilang.c parser.c lexer.c semantic.c codegen.c codegen_multilang.c /Fe:${{ matrix.artifact_name }}
 
-      - name: Test build
+      - name: Build native compiler (Linux/macOS)
+        if: runner.os != 'Windows'
         run: |
-          if [ "$RUNNER_OS" == "Windows" ]; then
-            ./${{ matrix.artifact_name }} --version || echo "Version flag not implemented"
-          else
-            ./${{ matrix.artifact_name }} --version || echo "Version flag not implemented"
-          fi
-          echo "Build successful!"
-        shell: bash
+          gcc -o ${{ matrix.native_name }} sub_native_compiler.c parser.c lexer.c semantic.c ir.c codegen_x64.c
+          chmod +x ${{ matrix.native_name }}
 
-      - name: Upload artifacts
+      - name: Build native compiler (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          cl /I. sub_native_compiler.c parser.c lexer.c semantic.c ir.c codegen_x64.c /Fe:${{ matrix.native_name }}
+
+      - name: Upload transpiler artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.asset_name }}
+          name: ${{ matrix.asset_name }}-transpiler
           path: ${{ matrix.artifact_name }}
+          retention-days: 5
+
+      - name: Upload native compiler artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset_name }}-native
+          path: ${{ matrix.native_name }}
           retention-days: 5
 
   create-release:
@@ -102,118 +113,62 @@ jobs:
             echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
           fi
 
-      - name: Generate release notes
+      - name: Read release notes
         id: release_notes
         run: |
-          cat > release_notes.md << 'EOF'
-          ## 🎉 SUB Language ${{ steps.version.outputs.VERSION }} - Windows Support Release
+          if [ -f "RELEASE_NOTES_${{ steps.version.outputs.VERSION }}.md" ]; then
+            cat "RELEASE_NOTES_${{ steps.version.outputs.VERSION }}.md" > release_notes.md
+          else
+            cat > release_notes.md << 'EOF'
+          ## 🎉 SUB Language ${{ steps.version.outputs.VERSION }}
           
-          ### 🪟 What's New: Full Windows/MSVC Compatibility!
+          ### 🐛 Native Compiler Bug Fixes & Stability
           
-          SUB Language compiler now builds successfully on Windows with Microsoft Visual C++ (MSVC)! This release includes comprehensive cross-platform compatibility fixes.
+          **Release Date**: December 30, 2025  
+          **Type**: Bug Fix Release  
+          **Focus**: Native x86-64 Compiler Stability
           
-          #### ✨ Key Features
+          #### ✅ Bugs Fixed (5 Critical Issues)
           
-          **Windows Build Support**
-          - ✅ Full MSVC/Visual Studio compatibility
-          - ✅ Automatic function mapping for Windows API
-          - ✅ Cross-platform compilation without code changes
-          - ✅ Works on Windows, Linux, and macOS
+          1. **Fixed Enum Name Conflicts** - Renamed `REG_*` to `X64_REG_*`
+          2. **Fixed Duplicate Function** - Renamed `read_file()` to `read_file_native()`
+          3. **Fixed AST Node Types** - Updated `NODE_*` to `AST_*`
+          4. **Fixed Field Access** - Changed `node->name` to `node->value`
+          5. **Fixed Duplicate Label** - Generate unique return labels
           
-          #### 🔧 Technical Changes
+          #### 📦 What's Included
           
-          **New Files**
-          - `windows_compat.h` - Central compatibility header for Windows/MSVC
-            - Maps `strdup()` → `_strdup()` 
-            - Maps `strcasecmp()` → `_stricmp()`
-            - Maps `strncasecmp()` → `_strnicmp()`
-            - Conditionally handles `<strings.h>` (not available on Windows)
+          - **Native Compiler** (`subc-native`) - Compiles to x86-64 machine code
+          - **Transpiler** (`sublang`) - Converts to 12+ languages
+          - **Full Windows/MSVC Support**
+          - **Linux & macOS Support**
           
-          **Updated Files** (8 files with compatibility fixes)
-          - `sub_multilang.c` - Multi-language compiler driver
-          - `parser.c` - AST parser
-          - `parser_enhanced.c` - Enhanced parser with full language support
-          - `semantic.c` - Semantic analyzer
-          - `lexer.c` - Lexical analyzer
-          - `codegen.c` - Code generator
-          - `codegen_multilang.c` - Multi-language code generator
-          - `compiler/backend/codegen.c` - Backend code generator
+          #### 🚀 Installation
           
-          ### 🚀 How to Build
+          Download the appropriate binaries for your platform:
+          - `sublang-linux` / `subc-native-linux` (Linux x86_64)
+          - `sublang-macos` / `subc-native-macos` (macOS x86_64)
+          - `sublang-windows.exe` / `subc-native-windows.exe` (Windows x64)
           
-          #### Windows (MSVC)
-          ```batch
-          REM Using Visual Studio Developer Command Prompt
-          cl /I. sub_multilang.c parser.c lexer.c semantic.c codegen.c codegen_multilang.c /Fe:subc.exe
-          subc.exe program.sb python
-          ```
+          #### 📝 Usage
           
-          #### Linux/macOS
+          **Native Compilation:**
           ```bash
-          gcc -o subc sub_multilang.c parser.c lexer.c semantic.c codegen.c codegen_multilang.c
-          ./subc program.sb java
+          ./subc-native program.sb myapp
+          ./myapp
           ```
           
-          ### 🎯 Target Languages Supported
-          
-          Compile your SUB code to any of these languages:
-          - C, C++
-          - Python
-          - Java
-          - JavaScript, TypeScript
-          - Swift, Kotlin
-          - Rust
-          - Ruby
-          - Go (coming soon)
-          - Assembly (x86-64)
-          - CSS
-          - LLVM IR (coming soon)
-          - WebAssembly (coming soon)
-          
-          ### 📦 Cross-Platform Targets
-          
-          - 🖥️ **Desktop**: Windows, macOS, Linux
-          - 📱 **Mobile**: Android, iOS
-          - 🌐 **Web**: Browser-based applications
-          
-          ### 🔍 What's Fixed
-          
-          - **Issue**: `strdup()` not recognized by MSVC → Fixed with automatic mapping
-          - **Issue**: `strcasecmp()` undefined on Windows → Fixed with `_stricmp()` mapping
-          - **Issue**: `<strings.h>` doesn't exist on Windows → Fixed with conditional includes
-          - **Issue**: 20+ files affected by Windows incompatibility → All files updated
-          
-          ### 📥 Installation
-          
-          Download the appropriate binary for your platform:
-          - **Windows (x64)**: `sublang-windows-x64.exe` ✨ NEW!
-          - **Linux (x64)**: `sublang-linux-x64`
-          - **macOS (x64)**: `sublang-macos-x64`
-          
-          **Windows Usage:**
-          ```batch
-          sublang-windows-x64.exe program.sb python
-          ```
-          
-          **Linux/macOS Usage:**
+          **Transpilation:**
           ```bash
-          chmod +x sublang-*-x64
-          ./sublang-*-x64 program.sb ruby
+          ./sublang program.sb python
+          python3 output.py
           ```
-          
-          ### 📚 Documentation
-          
-          For complete documentation, visit: https://github.com/subhobhai943/sub-lang
-          
-          ### 🙏 Acknowledgments
-          
-          Thank you to all contributors and users who reported Windows build issues!
           
           ---
           
-          **Full Changelog**: https://github.com/subhobhai943/sub-lang/commits/${{ steps.version.outputs.VERSION }}
+          **Full Changelog**: https://github.com/${{ github.repository }}/compare/v1.0.4...${{ steps.version.outputs.VERSION }}
           EOF
-          echo "Generated release notes"
+          fi
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -224,9 +179,12 @@ jobs:
           draft: false
           prerelease: false
           files: |
-            artifacts/sublang-linux-x64/*
-            artifacts/sublang-macos-x64/*
-            artifacts/sublang-windows-x64.exe/*
+            artifacts/sublang-linux-x64-transpiler/*
+            artifacts/sublang-linux-x64-native/*
+            artifacts/sublang-macos-x64-transpiler/*
+            artifacts/sublang-macos-x64-native/*
+            artifacts/sublang-windows-x64.exe-transpiler/*
+            artifacts/sublang-windows-x64.exe-native/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

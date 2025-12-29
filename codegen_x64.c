@@ -31,8 +31,8 @@ X64Context* x64_context_create(FILE *output) {
     ctx->stack_offset = 0;
     
     // Mark special registers as in use
-    ctx->reg_in_use[REG_RSP] = true;
-    ctx->reg_in_use[REG_RBP] = true;
+    ctx->reg_in_use[X64_REG_RSP] = true;
+    ctx->reg_in_use[X64_REG_RBP] = true;
     
     return ctx;
 }
@@ -43,15 +43,15 @@ void x64_context_free(X64Context *ctx) {
 
 /* Get register name */
 const char* x64_register_name(X64Register reg, bool is_64bit) {
-    if (reg >= REG_COUNT) return "INVALID";
+    if (reg >= X64_REG_COUNT) return "INVALID";
     return is_64bit ? register_names_64[reg] : register_names_32[reg];
 }
 
 /* Allocate a free register */
 X64Register x64_alloc_register(X64Context *ctx) {
     // Prefer caller-saved registers first
-    X64Register priority[] = {REG_RAX, REG_RCX, REG_RDX, REG_RSI, REG_RDI, 
-                               REG_R8, REG_R9, REG_R10, REG_R11};
+    X64Register priority[] = {X64_REG_RAX, X64_REG_RCX, X64_REG_RDX, X64_REG_RSI, X64_REG_RDI, 
+                               X64_REG_R8, X64_REG_R9, X64_REG_R10, X64_REG_R11};
     
     for (int i = 0; i < 9; i++) {
         if (!ctx->reg_in_use[priority[i]]) {
@@ -61,18 +61,18 @@ X64Register x64_alloc_register(X64Context *ctx) {
     }
     
     // Fall back to callee-saved registers
-    for (int i = REG_RBX; i < REG_COUNT; i++) {
+    for (int i = X64_REG_RBX; i < X64_REG_COUNT; i++) {
         if (!ctx->reg_in_use[i]) {
             ctx->reg_in_use[i] = true;
             return i;
         }
     }
     
-    return REG_RAX; // Fallback
+    return X64_REG_RAX; // Fallback
 }
 
 void x64_free_register(X64Context *ctx, X64Register reg) {
-    if (reg != REG_RSP && reg != REG_RBP) {
+    if (reg != X64_REG_RSP && reg != X64_REG_RBP) {
         ctx->reg_in_use[reg] = false;
     }
 }

@@ -1,0 +1,76 @@
+name: Reorganize Source Files
+
+on:
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  reorganize:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+      
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+      
+      - name: Create directories if needed
+        run: |
+          mkdir -p src/core
+          mkdir -p src/include
+      
+      - name: Move C source files to src/core
+        run: |
+          # Move .c files from root to src/core
+          if [ -f "error_handler.c" ]; then git mv error_handler.c src/core/; fi
+          if [ -f "lexer.c" ]; then git mv lexer.c src/core/; fi
+          if [ -f "parser.c" ]; then git mv parser.c src/core/; fi
+          if [ -f "parser_enhanced.c" ]; then git mv parser_enhanced.c src/core/; fi
+          if [ -f "semantic.c" ]; then git mv semantic.c src/core/; fi
+          if [ -f "type_system.c" ]; then git mv type_system.c src/core/; fi
+          if [ -f "utils.c" ]; then git mv utils.c src/core/; fi
+      
+      - name: Move header files to src/include
+        run: |
+          # Move .h files from root to src/include
+          if [ -f "error_handler.h" ]; then git mv error_handler.h src/include/; fi
+          if [ -f "sub_compiler.h" ]; then git mv -f sub_compiler.h src/include/; fi
+          if [ -f "type_system.h" ]; then git mv type_system.h src/include/; fi
+          if [ -f "windows_compat.h" ]; then git mv -f windows_compat.h src/include/; fi
+      
+      - name: Remove reorganize script
+        run: |
+          if [ -f "reorganize_src.sh" ]; then git rm reorganize_src.sh; fi
+      
+      - name: Check for changes
+        id: check_changes
+        run: |
+          if git diff --staged --quiet; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Commit and push changes
+        if: steps.check_changes.outputs.has_changes == 'true'
+        run: |
+          git commit -m "chore: reorganize source files into proper directories
+
+          - Move C source files to src/core/
+          - Move header files to src/include/
+          - Remove obsolete reorganize script
+          
+          This improves project structure and maintainability."
+          git push
+      
+      - name: Summary
+        run: |
+          echo "✅ File reorganization complete!"
+          echo "Files have been moved to their proper locations:"
+          echo "  - C files → src/core/"
+          echo "  - Header files → src/include/"

@@ -1,15 +1,60 @@
-# Binaries
+# Compiled binaries and executables
 subc-native
+subc-native-*
 sublang
+sublang-*
 output_bin
 debug_*
-*.on
-*.o
-*.exe
 uni_test
+func_test
+program
+simple_output
+test_*_output
+test_out
+*.exe
+*.out
+*.app
+a.out
+
+# Object files and libraries
+*.o
+*.on
+*.a
+*.so
+*.dylib
+*.dll
+*.lib
+
+# Assembly files (generated)
+*.s
+*.asm
+
+# Backup files
+*.backup
+*.bak
+*.old
+*.swp
+*.swo
+*~
+
+# IDE and editor files
+.vscode/
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Build directories
+build/
+dist/
+out/
+target/
 
 # Test outputs
 *_output.txt
+test_output/
+
+# Generated transpiled files (allow in examples/tests)
 *.py
 *.js
 *.rb
@@ -19,4 +64,20 @@ uni_test
 *.kt
 *.swift
 !tests/*.py
+!examples/*.py
+!examples/*.js
 !examples/*.sb
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+install_manifest.txt
+
+# Logs
+*.log
+
+# Package manager
+node_modules/
+__pycache__/
+*.pyc

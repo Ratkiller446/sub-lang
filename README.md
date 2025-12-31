@@ -116,6 +116,11 @@ make transpiler
 - macOS (Clang)
 - One codebase, all platforms
 
+📁 **Professional Code Organization**
+- Clean src/ directory structure
+- Logically organized modules
+- Easy to navigate and maintain
+
 ---
 
 ## 📝 SUB Syntax
@@ -203,20 +208,58 @@ SUB Source (.sb)
 Native Binary ✨
 ```
 
-### Implementation (Pure C)
+### Project Structure
 
 ```
 sub-lang/
-├── sub_native_compiler.c  # Native compiler driver
-├── lexer.c                # Tokenization
-├── parser.c               # AST construction
-├── semantic.c             # Type checking
-├── ir.c                   # Intermediate representation
-├── codegen_x64.c          # x86-64 code generation
-├── codegen_multilang.c    # Multi-language transpiler
-├── sub_compiler.h         # Shared definitions
-└── windows_compat.h       # Cross-platform support
+├── src/
+│   ├── core/                  # Core compiler components
+│   │   ├── lexer.c           # Tokenization
+│   │   ├── parser.c          # Basic parser
+│   │   ├── parser_enhanced.c # Enhanced parser
+│   │   ├── semantic.c        # Type checking & analysis
+│   │   ├── type_system.c/h   # Type system implementation
+│   │   ├── error_handler.c/h # Error handling
+│   │   └── utils.c           # Utility functions
+│   │
+│   ├── codegen/              # Code generation backends
+│   │   ├── codegen.c         # Main codegen
+│   │   ├── codegen_x64.c/h   # x86-64 native code
+│   │   ├── codegen_cpp.c/h   # C++ transpiler
+│   │   ├── codegen_rust.c/h  # Rust transpiler
+│   │   ├── codegen_native.c/h # Native compilation
+│   │   ├── codegen_multilang.c # Multi-language support
+│   │   └── targets.c/h       # Target management
+│   │
+│   ├── ir/                   # Intermediate representation
+│   │   ├── ir.c              # IR generation
+│   │   └── ir.h              # IR definitions
+│   │
+│   ├── compilers/            # Main compiler drivers
+│   │   ├── sub.c             # Standard compiler
+│   │   ├── sub_multilang.c   # Multi-language transpiler
+│   │   ├── sub_native.c      # Native compiler (v1)
+│   │   └── sub_native_compiler.c # Native compiler (v2)
+│   │
+│   └── include/              # Public headers
+│       ├── sub_compiler.h    # Main compiler header
+│       └── windows_compat.h  # Cross-platform support
+│
+├── tests/                    # Test files (.sb)
+├── examples/                 # Example programs
+├── docs/                     # Documentation
+├── stdlib/                   # Standard library
+├── .github/workflows/        # CI/CD workflows
+├── Makefile                  # Build configuration
+├── CMakeLists.txt           # CMake configuration
+└── README.md                # This file
 ```
+
+**Recent Updates:**
+- ✅ Reorganized all source files into logical `src/` structure
+- ✅ Separated core, codegen, IR, and compiler modules
+- ✅ Moved test files to dedicated `tests/` directory
+- ✅ Professional, maintainable codebase organization
 
 ---
 
@@ -293,10 +336,10 @@ make test
 REM Open Visual Studio Developer Command Prompt
 
 REM Build native compiler
-cl /I. sub_native_compiler.c lexer.c parser.c semantic.c ir.c codegen_x64.c /Fe:subc-native.exe
+cl /Isrc/include src/compilers/sub_native_compiler.c src/core/*.c src/codegen/*.c src/ir/*.c /Fe:subc-native.exe
 
 REM Build transpiler
-cl /I. sub_multilang.c lexer.c parser.c semantic.c codegen.c codegen_multilang.c /Fe:sublang.exe
+cl /Isrc/include src/compilers/sub_multilang.c src/core/*.c src/codegen/*.c /Fe:sublang.exe
 ```
 
 ---
@@ -334,10 +377,11 @@ cl /I. sub_multilang.c lexer.c parser.c semantic.c codegen.c codegen_multilang.c
 
 ## 📚 Documentation
 
-- **[Native Compiler Guide](NATIVE_COMPILER_GUIDE.md)** - Complete native compilation docs
-- **[Language Specification](LANGUAGE_SPEC.md)** - Full syntax reference
-- **[Multi-Language Guide](MULTILANG_GUIDE.md)** - Transpilation details
-- **[Build Guide](BUILD_GUIDE.md)** - Build from source
+- **[Native Compiler Guide](docs/NATIVE_COMPILER_GUIDE.md)** - Complete native compilation docs
+- **[Language Specification](docs/LANGUAGE_SPEC.md)** - Full syntax reference
+- **[Multi-Language Guide](docs/MULTILANG_GUIDE.md)** - Transpilation details
+- **[Build Guide](docs/BUILD_GUIDE.md)** - Build from source
+- **[Source Reorganization Plan](docs/implementation/SRC_REORGANIZATION_PLAN.md)** - Code structure details
 - **[Contributing](CONTRIBUTING.md)** - Join development
 
 ---
@@ -352,12 +396,15 @@ cl /I. sub_multilang.c lexer.c parser.c semantic.c codegen.c codegen_multilang.c
 - [x] Multi-language transpilation (10+ languages)
 - [x] Windows/Linux/macOS support
 - [x] Cross-platform build system
+- [x] **Professional source code organization** 🆕
+- [x] Automated reorganization workflow
 
 ### 🚧 In Progress
 - [ ] Control flow (if/else/while) in native compiler
 - [ ] Function definitions in native compiler
 - [ ] Standard library
 - [ ] Optimization passes
+- [ ] Updating build system for new structure
 
 ### 💭 Planned
 - [ ] ARM64 support
@@ -379,7 +426,7 @@ git clone https://github.com/subhobhai943/sub-lang.git
 cd sub-lang
 make all
 
-# Make changes
+# Make changes in src/ directory
 # Test
 make test
 
@@ -414,6 +461,7 @@ MIT License - See [LICENSE](LICENSE)
 - **Production Ready**: Standalone binaries
 - **No Dependencies**: Zero runtime requirements
 - **Cross-Platform**: One binary everywhere
+- **Clean Codebase**: Professional structure, easy to maintain
 
 ### For Everyone
 - **Flexible**: Native OR transpile to any language
@@ -432,6 +480,7 @@ MIT License - See [LICENSE](LICENSE)
 | Compile Time | ⚡ Fast | N/A | N/A | 🐌 Slow |
 | Binary Size | 📦 Small | N/A | N/A | 📦 Small |
 | Syntax | 🤩 Beautiful | 😊 Good | 😐 OK | 🤔 Complex |
+| Code Organization | ✅ Professional | ✅ Good | ✅ Good | ✅ Excellent |
 
 ---
 
@@ -460,4 +509,4 @@ Built with ❤️ by the SUB community
 
 **Now with Native Compilation!** ⚡🚀
 
-**Powered by Pure C** 🔧 | **No Runtime Needed** 🎉 | **True Compiler** ✨
+**Powered by Pure C** 🔧 | **No Runtime Needed** 🎉 | **True Compiler** ✨ | **Professionally Organized** 📁

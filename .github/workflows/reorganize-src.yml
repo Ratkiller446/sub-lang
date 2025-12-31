@@ -33,6 +33,7 @@ jobs:
           mkdir -p src/ir
           mkdir -p src/compilers
           mkdir -p src/include
+          mkdir -p tests
           echo "Directories created"
       
       - name: Move core compiler files
@@ -52,34 +53,34 @@ jobs:
       - name: Move code generation files
         run: |
           echo "Moving code generation files..."
-          git mv codegen.c src/codegen/ || true
-          git mv codegen_cpp.c src/codegen/ || true
-          git mv codegen_cpp.h src/codegen/ || true
-          git mv codegen_multilang.c src/codegen/ || true
-          git mv codegen_native.c src/codegen/ || true
-          git mv codegen_native.h src/codegen/ || true
-          git mv codegen_rust.c src/codegen/ || true
-          git mv codegen_rust.h src/codegen/ || true
-          git mv codegen_x64.c src/codegen/ || true
-          git mv codegen_x64.h src/codegen/ || true
-          git mv targets.c src/codegen/ || true
-          git mv targets.h src/codegen/ || true
+          git mv codegen.c src/codegen/ 2>/dev/null || true
+          git mv codegen_cpp.c src/codegen/ 2>/dev/null || true
+          git mv codegen_cpp.h src/codegen/ 2>/dev/null || true
+          git mv codegen_multilang.c src/codegen/ 2>/dev/null || true
+          git mv codegen_native.c src/codegen/ 2>/dev/null || true
+          git mv codegen_native.h src/codegen/ 2>/dev/null || true
+          git mv codegen_rust.c src/codegen/ 2>/dev/null || true
+          git mv codegen_rust.h src/codegen/ 2>/dev/null || true
+          git mv codegen_x64.c src/codegen/ 2>/dev/null || true
+          git mv codegen_x64.h src/codegen/ 2>/dev/null || true
+          git mv targets.c src/codegen/ 2>/dev/null || true
+          git mv targets.h src/codegen/ 2>/dev/null || true
           echo "Codegen files moved (12 files)"
       
       - name: Move IR files
         run: |
           echo "Moving IR files..."
-          git mv ir.c src/ir/ || true
-          git mv ir.h src/ir/ || true
+          git mv ir.c src/ir/ 2>/dev/null || true
+          git mv ir.h src/ir/ 2>/dev/null || true
           echo "IR files moved (2 files)"
       
       - name: Move compiler files
         run: |
           echo "Moving main compiler files..."
-          git mv sub.c src/compilers/ || true
-          git mv sub_multilang.c src/compilers/ || true
-          git mv sub_native.c src/compilers/ || true
-          git mv sub_native_compiler.c src/compilers/ || true
+          git mv sub.c src/compilers/ 2>/dev/null || true
+          git mv sub_multilang.c src/compilers/ 2>/dev/null || true
+          git mv sub_native.c src/compilers/ 2>/dev/null || true
+          git mv sub_native_compiler.c src/compilers/ 2>/dev/null || true
           echo "Compiler files moved (4 files)"
       
       - name: Move header files
@@ -88,6 +89,14 @@ jobs:
           git mv sub_compiler.h src/include/ || true
           git mv windows_compat.h src/include/ || true
           echo "Header files moved (2 files)"
+      
+      - name: Move test files
+        run: |
+          echo "Moving test .sb files..."
+          git mv test_*.sb tests/ 2>/dev/null || true
+          git mv simple_test.sb tests/ 2>/dev/null || true
+          git mv example.sb tests/ 2>/dev/null || true
+          echo "Test files moved"
       
       - name: Create README files for each directory
         run: |
@@ -164,7 +173,21 @@ jobs:
           - windows_compat.h - Windows compatibility definitions
           EOFINCLUDE
           
-          git add src/*/README.md
+          cat > tests/README.md <<'EOFTESTS'
+          # Test Files
+          
+          This directory contains SUB language test files (.sb).
+          
+          ## Test Files
+          
+          - example.sb - Example program
+          - simple_test.sb - Simple test case
+          - test_*.sb - Various compiler test cases
+          
+          These files are used to test the compiler functionality.
+          EOFTESTS
+          
+          git add src/*/README.md tests/README.md
           echo "README files created"
       
       - name: Verify reorganization
@@ -178,7 +201,9 @@ jobs:
           echo "IR files: $(find src/ir -name '*.c' -o -name '*.h' 2>/dev/null | wc -l)"
           echo "Compiler files: $(find src/compilers -name '*.c' 2>/dev/null | wc -l)"
           echo "Header files: $(find src/include -name '*.h' 2>/dev/null | wc -l)"
-          echo "Total: $(find src/ -name '*.c' -o -name '*.h' 2>/dev/null | wc -l) files"
+          echo "Test files: $(find tests -name '*.sb' 2>/dev/null | wc -l)"
+          echo "Total source: $(find src/ -name '*.c' -o -name '*.h' 2>/dev/null | wc -l) files"
+          echo "Total tests: $(find tests/ -name '*.sb' 2>/dev/null | wc -l) files"
       
       - name: Commit changes
         run: |
@@ -192,8 +217,9 @@ jobs:
           - src/ir/ - Intermediate representation (2 files)
           - src/compilers/ - Main compiler executables (4 files)
           - src/include/ - Public headers (2 files)
+          - tests/ - Test .sb files (21 files)
           
-          Total: 29 files moved
+          Total: 29 source files + 21 test files moved
           
           Benefits:
           - Clean root directory
@@ -201,6 +227,7 @@ jobs:
           - Easier navigation
           - Professional structure
           - Better maintainability
+          - Tests properly organized
           
           Part of repository cleanup and modernization.
           Automated via GitHub Actions workflow."
@@ -217,13 +244,15 @@ jobs:
           echo "   SOURCE REORGANIZATION COMPLETE"
           echo "================================================"
           echo ""
-          echo "All source files have been moved to src/ directory."
+          echo "All source files moved to src/ directory."
+          echo "All test files moved to tests/ directory."
           echo ""
           echo "Next steps:"
           echo "  1. Update Makefile to use new paths"
           echo "  2. Update CMakeLists.txt"
           echo "  3. Update include paths in source files"
-          echo "  4. Test compilation"
+          echo "  4. Update test scripts"
+          echo "  5. Test compilation"
           echo ""
           echo "See: docs/implementation/SRC_REORGANIZATION_PLAN.md"
           echo "================================================"

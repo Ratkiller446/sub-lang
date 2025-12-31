@@ -24,8 +24,9 @@ else ifeq ($(UNAME_S),Linux)
     # Linux
     CFLAGS += -DLINUX
 else
-    # Windows
+    # Windows (MinGW/Cygwin/MSYS2)
     CFLAGS += -DWINDOWS
+    LDFLAGS += -static
     NATIVE_TARGET = subc-native.exe
     TRANS_TARGET = sublang.exe
 endif
@@ -74,12 +75,16 @@ $(TRANS_TARGET): $(TRANS_OBJECTS)
 # Install (optional)
 install: all
 	@echo "Installing SUB compilers..."
+ifeq ($(OS),Windows_NT)
+	@echo "Windows: Copy executables to current directory or add to PATH manually"
+else
 	mkdir -p /usr/local/bin
 	cp $(NATIVE_TARGET) /usr/local/bin/subc
 	cp $(TRANS_TARGET) /usr/local/bin/sublang
 	@echo "✅ Installed:"
 	@echo "   /usr/local/bin/subc     - Native compiler"
 	@echo "   /usr/local/bin/sublang  - Transpiler"
+endif
 
 # Test suite
 test: all

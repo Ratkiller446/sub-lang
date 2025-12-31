@@ -304,6 +304,7 @@ char* codegen_generate_cpp(ASTNode *ast, Platform platform);
 char* codegen_generate_c(ASTNode *ast, Platform platform);
 char* codegen_embed_cpp(const char *cpp_code);
 char* codegen_embed_c(const char *c_code);
+void optimize_c_output(ASTNode *node);
 
 // Optimization
 void optimizer_optimize(ASTNode *ast, int level);

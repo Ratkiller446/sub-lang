@@ -16,8 +16,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # Windows build temporarily disabled - will be fixed in v1.0.7
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         include:
           - os: ubuntu-latest
             artifact_name: sublang-linux
@@ -27,11 +26,10 @@ jobs:
             artifact_name: sublang-macos
             native_name: subc-native-macos
             asset_name: sublang-macos-x64
-          # Windows build commented out until linker issues resolved
-          # - os: windows-latest
-          #   artifact_name: sublang-windows.exe
-          #   native_name: subc-native-windows.exe
-          #   asset_name: sublang-windows-x64.exe
+          - os: windows-latest
+            artifact_name: sublang-windows.exe
+            native_name: subc-native-windows.exe
+            asset_name: sublang-windows-x64.exe
 
     steps:
       - name: Checkout code
@@ -54,6 +52,18 @@ jobs:
           make transpiler
           chmod +x sublang
           mv sublang ${{ matrix.artifact_name }}
+
+      - name: Build transpiler (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          cl /Isrc/include /Isrc/core /Isrc/codegen /Isrc/ir src/compilers/sub_multilang.c src/core/lexer.c src/core/parser_enhanced.c src/core/semantic.c src/codegen/codegen.c src/codegen/codegen_multilang.c src/codegen/codegen_rust.c src/core/type_system.c src/core/utils.c src/codegen/codegen_cpp.c src/codegen/targets.c /Fe:${{ matrix.artifact_name }}
+
+      - name: Build native compiler (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          cl /Isrc/include /Isrc/core /Isrc/codegen /Isrc/ir src/compilers/sub_native_compiler.c src/core/parser_enhanced.c src/core/lexer.c src/core/semantic.c src/ir/ir.c src/codegen/codegen_x64.c src/core/utils.c /Fe:${{ matrix.native_name }}
 
       - name: Build native compiler (Linux/macOS)
         if: runner.os != 'Windows'
@@ -304,12 +314,13 @@ jobs:
             artifacts/sublang-linux-x64-native/*
             artifacts/sublang-macos-x64-transpiler/*
             artifacts/sublang-macos-x64-native/*
+            artifacts/sublang-windows-x64-transpiler/*
+            artifacts/sublang-windows-x64-native/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Release Summary
         run: |
           echo "✅ Release ${{ steps.version.outputs.VERSION }} created successfully!"
-          echo "📦 Artifacts uploaded for Linux and macOS"
-          echo "⚠️  Windows build temporarily disabled (coming in v1.0.7)"
+          echo "📦 Artifacts uploaded for Linux, macOS, and Windows"
           echo "🔗 View release: https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.VERSION }}"

@@ -2,16 +2,16 @@
 # Supports both native compilation and transpilation
 
 CC = gcc
-CFLAGS = -Wall -Wextra -std=c11 -O2 -I.
+CFLAGS = -Wall -Wextra -std=c11 -O2 -Isrc/include -Isrc/core -Isrc/codegen -Isrc/ir -I.
 LDFLAGS = 
 
 # Source files for native compiler
-NATIVE_SOURCES = sub_native_compiler.c lexer.c parser_enhanced.c semantic.c ir.c codegen_x64.c utils.c
+NATIVE_SOURCES = src/compilers/sub_native_compiler.c src/core/lexer.c src/core/parser_enhanced.c src/core/semantic.c src/ir/ir.c src/codegen/codegen_x64.c src/core/utils.c
 NATIVE_OBJECTS = $(NATIVE_SOURCES:.c=.o)
 NATIVE_TARGET = subc-native
 
 # Source files for transpiler
-TRANS_SOURCES = sub_multilang.c lexer.c parser_enhanced.c semantic.c codegen.c codegen_multilang.c codegen_rust.c type_system.c error_handler.c codegen_cpp.c targets.c
+TRANS_SOURCES = src/compilers/sub_multilang.c src/core/lexer.c src/core/parser_enhanced.c src/core/semantic.c src/codegen/codegen.c src/codegen/codegen_multilang.c src/codegen/codegen_rust.c src/core/type_system.c src/core/utils.c src/codegen/codegen_cpp.c src/codegen/targets.c
 TRANS_OBJECTS = $(TRANS_SOURCES:.c=.o)
 TRANS_TARGET = sublang
 

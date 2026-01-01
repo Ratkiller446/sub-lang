@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <inttypes.h>
 
 /* Create IR module */
 IRModule* ir_module_create(void) {
@@ -375,7 +376,7 @@ static void ir_generate_from_ast_node(IRFunction *func, ASTNode *node) {
             IRInstruction *load_const = ir_instruction_create(IR_CONST_INT);
             load_const->dest = ir_value_create_reg(func->reg_count++, IR_TYPE_INT);
             if (node->value) {
-                load_const->src1 = ir_value_create_int(atoi(node->value));
+                load_const->src1 = ir_value_create_int(atoll(node->value));
             } else {
                 load_const->src1 = ir_value_create_int(0);
             }
@@ -536,7 +537,7 @@ void ir_print(IRModule *module) {
                 case IR_MUL: printf("MUL"); break;
                 case IR_DIV: printf("DIV"); break;
                 case IR_CONST_INT: 
-                    printf("CONST_INT %ld", instr->src1->data.int_val); 
+                    printf("CONST_INT %" PRId64, instr->src1->data.int_val); 
                     break;
                 case IR_ALLOC:
                     printf("ALLOC %d", instr->dest->data.reg_num);
@@ -562,7 +563,7 @@ void ir_print(IRModule *module) {
                 case IR_JUMP_IF_NOT: printf("JUMP_IF_NOT"); break;
                 case IR_LABEL: printf("LABEL %s", instr->dest->data.label); break;
                 case IR_CALL: 
-                    printf("CALL %s (args=%ld)", instr->dest->data.label, instr->src1 ? instr->src1->data.int_val : 0); 
+                    printf("CALL %s (args=%" PRId64 ")", instr->dest->data.label, instr->src1 ? instr->src1->data.int_val : 0); 
                     break;
                 default: printf("UNKNOWN (%d)", instr->opcode); break;
             }
